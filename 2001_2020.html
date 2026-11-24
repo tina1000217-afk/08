@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>全球國際入境人次動態長條圖（2001–2020）｜世銀 ST.INT.ARVL</title>
+  <!-- 載入 Tailwind CSS 以強化響應式與設計細節，同時搭配自訂薰衣草色系變數 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-lavender: #f4f1fb;
+      --card-bg: #ffffff;
+      --primary-purple: #6c5ce7;
+      --primary-hover: #5641e5;
+      --soft-purple: #ebe6fa;
+      --text-dark: #2d2640;
+      --text-muted: #6b6480;
+      --border-soft: #dfd8f3;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Inter", "Noto Sans TC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(160deg, var(--bg-lavender) 0%, #faf8ff 100%);
+      color: var(--text-dark);
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    .container-card {
+      max-width: 1120px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border-soft);
+      border-radius: 20px;
+      box-shadow: 0 12px 32px rgba(108, 92, 231, 0.08);
+      padding: 28px 28px 24px;
+    }
+
+    .header-title {
+      font-size: clamp(1.35rem, 2.5vw, 1.8rem);
+      font-weight: 800;
+      color: var(--text-dark);
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+    }
+
+    .subtitle {
+      margin-top: 6px;
+      font-size: 0.98rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 20px;
+      margin-bottom: 18px;
+      padding: 12px 16px;
+      background: var(--soft-purple);
+      border-radius: 14px;
+    }
+
+    .ctrl-btn {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.12s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .ctrl-btn:active {
+      transform: scale(0.97);
+    }
+
+    #togglePlayBtn {
+      background-color: var(--primary-purple);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(108, 92, 231, 0.25);
+    }
+
+    #togglePlayBtn:hover {
+      background-color: var(--primary-hover);
+    }
+
+    #resetBtn {
+      background-color: #ffffff;
+      color: var(--primary-purple);
+      border: 1px solid var(--border-soft);
+    }
+
+    #resetBtn:hover {
+      background-color: #f8f6ff;
+    }
+
+    .year-badge {
+      margin-left: auto;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--primary-purple);
+      background: #ffffff;
+      padding: 8px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border-soft);
+      box-shadow: 0 2px 6px rgba(108, 92, 231, 0.05);
+    }
+
+    @media (max-width: 640px) {
+      .container-card {
+        padding: 20px 16px;
+      }
+      .year-badge {
+        margin-left: 0;
+        width: 100%;
+        text-align: center;
+      }
+      #chartdiv {
+        height: 460px;
+      }
+    }
+
+    #chartdiv {
+      width: 100%;
+      height: 540px;
+      font-size: 0.95rem;
+    }
+
+    .footer-note {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-soft);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container-card">
+    <header>
+      <div>
+        <h1 class="header-title">全球國際入境人次動態長條圖（2001–2020）</h1>
+        <p class="subtitle">資料來源：世界銀行 ST.INT.ARVL（UN Tourism 彙整，依 2001–2020 累計入境人次前 10 大國家／地區）</p>
+      </div>
+    </header>
+
+    <!-- 控制列：播放/暫停、重播、目前年份顯示 -->
+    <div class="controls-bar">
+      <button id="togglePlayBtn" class="ctrl-btn" type="button">⏸ 暫停</button>
+      <button id="resetBtn" class="ctrl-btn" type="button">↺ 重播</button>
+      <span class="year-badge">目前年份：<strong id="currentYearText">2001</strong> / 2020</span>
+    </div>
+
+    <!-- amCharts 5 動態圖表畫布 -->
+    <div id="chartdiv"></div>
+
+    <!-- 資料說明註解 -->
+    <p class="footer-note">
+      註：部分國家／地區缺乏純過夜觀光客統計時，世銀指標會改採包含一日遊、郵輪客或跨境旅客之旅客總數；2020 年受邊境管制影響多數國家大幅下滑（部分缺漏年份以 0 顯示以便連續動畫）。
+    </p>
+  </div>
+
+  <!-- amCharts 5 核心與主題套件 -->
+  <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/ResponsiveMax.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/Adaptive.js"></script>
+
+  <script>
+    // 2001–2020 年世界銀行 ST.INT.ARVL 前 10 大累計入境人次國家／地區資料
+    const allData = {
+      "2001": {
+        "France": 0,
+        "United States": 70975000,
+        "China": 89013000,
+        "Spain": 75564000,
+        "Mexico": 100718000,
+        "Italy": 60960000,
+        "Poland": 61431000,
+        "Croatia": 40129000,
+        "Hungary": 30679000,
+        "Hong Kong SAR, China": 13725000
+      },
+      "2002": {
+        "France": 0,
+        "United States": 64434000,
+        "China": 97908000,
+        "Spain": 79313000,
+        "Mexico": 100153000,
+        "Italy": 63561000,
+        "Poland": 50735000,
+        "Croatia": 41737000,
+        "Hungary": 31739000,
+        "Hong Kong SAR, China": 16566000
+      },
+      "2003": {
+        "France": 0,
+        "United States": 62082000,
+        "China": 91662000,
+        "Spain": 82326000,
+        "Mexico": 92330000,
+        "Italy": 63026000,
+        "Poland": 52130000,
+        "Croatia": 42857000,
+        "Hungary": 31412000,
+        "Hong Kong SAR, China": 15537000
+      },
+      "2004": {
+        "France": 190282000,
+        "United States": 67606000,
+        "China": 109038000,
+        "Spain": 85981000,
+        "Mexico": 99250000,
+        "Italy": 58480000,
+        "Poland": 61918000,
+        "Croatia": 44974000,
+        "Hungary": 33934000,
+        "Hong Kong SAR, China": 21811000
+      },
+      "2005": {
+        "France": 185829000,
+        "United States": 71484000,
+        "China": 120292000,
+        "Spain": 92563000,
+        "Mexico": 103146000,
+        "Italy": 59230000,
+        "Poland": 64606000,
+        "Croatia": 45762000,
+        "Hungary": 36173000,
+        "Hong Kong SAR, China": 23359000
+      },
+      "2006": {
+        "France": 193882000,
+        "United States": 183178000,
+        "China": 124942000,
+        "Spain": 96152000,
+        "Mexico": 97701000,
+        "Italy": 66353000,
+        "Poland": 65115000,
+        "Croatia": 47733000,
+        "Hungary": 38318000,
+        "Hong Kong SAR, China": 25251000
+      },
+      "2007": {
+        "France": 193319000,
+        "United States": 175299000,
+        "China": 131873000,
+        "Spain": 98907000,
+        "Mexico": 93582000,
+        "Italy": 70271000,
+        "Poland": 66208000,
+        "Croatia": 52271000,
+        "Hungary": 39379000,
+        "Hong Kong SAR, China": 28169000
+      },
+      "2008": {
+        "France": 193571000,
+        "United States": 175703000,
+        "China": 130027000,
+        "Spain": 97670000,
+        "Mexico": 92948000,
+        "Italy": 70719000,
+        "Poland": 59935000,
+        "Croatia": 51336000,
+        "Hungary": 39554000,
+        "Hong Kong SAR, China": 29507000
+      },
+      "2009": {
+        "France": 192369000,
+        "United States": 160508000,
+        "China": 126476000,
+        "Spain": 91899000,
+        "Mexico": 88044000,
+        "Italy": 71692000,
+        "Poland": 53840000,
+        "Croatia": 47573000,
+        "Hungary": 40624000,
+        "Hong Kong SAR, China": 29591000
+      },
+      "2010": {
+        "France": 189826000,
+        "United States": 162275000,
+        "China": 133762000,
+        "Spain": 93744000,
+        "Mexico": 81953000,
+        "Italy": 73225000,
+        "Poland": 58340000,
+        "Croatia": 49006000,
+        "Hungary": 39904000,
+        "Hong Kong SAR, China": 36030000
+      },
+      "2011": {
+        "France": 196595000,
+        "United States": 147271422,
+        "China": 135423000,
+        "Spain": 99187000,
+        "Mexico": 75732000,
+        "Italy": 75866000,
+        "Poland": 60745000,
+        "Croatia": 49969000,
+        "Hungary": 41304000,
+        "Hong Kong SAR, China": 41921000
+      },
+      "2012": {
+        "France": 197522000,
+        "United States": 171629891,
+        "China": 132405000,
+        "Spain": 98128000,
+        "Mexico": 76749000,
+        "Italy": 76293000,
+        "Poland": 67390000,
+        "Croatia": 47185000,
+        "Hungary": 43565000,
+        "Hong Kong SAR, China": 48615000
+      },
+      "2013": {
+        "France": 204410000,
+        "United States": 179309906,
+        "China": 129078000,
+        "Spain": 103231000,
+        "Mexico": 78100000,
+        "Italy": 76762000,
+        "Poland": 72310000,
+        "Croatia": 48345000,
+        "Hungary": 43611000,
+        "Hong Kong SAR, China": 54299000
+      },
+      "2014": {
+        "France": 206599000,
+        "United States": 178311359,
+        "China": 128499000,
+        "Spain": 107144000,
+        "Mexico": 81042000,
+        "Italy": 77694000,
+        "Poland": 73750000,
+        "Croatia": 51168000,
+        "Hungary": 45984000,
+        "Hong Kong SAR, China": 60839000
+      },
+      "2015": {
+        "France": 203302000,
+        "United States": 176864531,
+        "China": 133820000,
+        "Spain": 109834000,
+        "Mexico": 87129000,
+        "Italy": 81068000,
+        "Poland": 77743000,
+        "Croatia": 55858000,
+        "Hungary": 48345000,
+        "Hong Kong SAR, China": 59308000
+      },
+      "2016": {
+        "France": 203042000,
+        "United States": 175261484,
+        "China": 141774000,
+        "Spain": 115561000,
+        "Mexico": 94853000,
+        "Italy": 84925000,
+        "Poland": 80476000,
+        "Croatia": 57587000,
+        "Hungary": 52890000,
+        "Hong Kong SAR, China": 56655000
+      },
+      "2017": {
+        "France": 207274000,
+        "United States": 174291750,
+        "China": 153260000,
+        "Spain": 121717000,
+        "Mexico": 99349000,
+        "Italy": 89931000,
+        "Poland": 83804000,
+        "Croatia": 59238000,
+        "Hungary": 54962000,
+        "Hong Kong SAR, China": 58472000
+      },
+      "2018": {
+        "France": 211998000,
+        "United States": 169324922,
+        "China": 158606000,
+        "Spain": 124456000,
+        "Mexico": 96497000,
+        "Italy": 93228602,
+        "Poland": 85946000,
+        "Croatia": 57668000,
+        "Hungary": 57667000,
+        "Hong Kong SAR, China": 65148000
+      },
+      "2019": {
+        "France": 217877000,
+        "United States": 165478000,
+        "China": 162538000,
+        "Spain": 126170000,
+        "Mexico": 97406000,
+        "Italy": 95399000,
+        "Poland": 88515000,
+        "Croatia": 60021000,
+        "Hungary": 61397000,
+        "Hong Kong SAR, China": 55913000
+      },
+      "2020": {
+        "France": 117109000,
+        "United States": 45037000,
+        "China": 30402000,
+        "Spain": 36410000,
+        "Mexico": 51128000,
+        "Italy": 38419000,
+        "Poland": 0,
+        "Croatia": 21608000,
+        "Hungary": 31641000,
+        "Hong Kong SAR, China": 3569000
+      }
+    };
+
+    const START_YEAR = 2001;
+    const END_YEAR = 2020;
+    const stepDuration = 1600;
+
+    let year = START_YEAR;
+    let isPlaying = true;
+    let stepTimer = null;
+    let sortTimer = null;
+    let initialKickoffTimer = null;
+
+    const togglePlayBtn = document.getElementById("togglePlayBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const currentYearText = document.getElementById("currentYearText");
+
+    // 建立 amCharts 5 Root 元素
+    const root = am5.Root.new("chartdiv");
+
+    // 設定大數字單位縮寫（M = 百萬, B = 十億）
+    root.numberFormatter.setAll({
+      numberFormat: "#a",
+      bigNumberPrefixes: [
+        { number: 1e6, suffix: "M" },
+        { number: 1e9, suffix: "B" }
+      ],
+      smallNumberPrefixes: []
+    });
+
+    // 套用動畫與柔和紫色主題調色盤
+    root.setThemes([
+      am5themes_Animated.new(root),
+      am5themes_Adaptive.new(root, {
+        baseColor: 0x6c5ce7,
+        baseColor2: 0xa29bfe,
+        count: 10,
+        mapShade: true,
+        keepContrast: true
+      }),
+      am5themes_ResponsiveMax.new(root)
+    ]);
+
+    // 建立 XYChart
+    const chart = root.container.children.push(am5xy.XYChart.new(root, {
+      panX: false,
+      panY: false,
+      wheelX: "none",
+      wheelY: "none",
+      paddingLeft: 0
+    }));
+
+    chart.zoomOutButton.set("forceHidden", true);
+
+    // Y 軸（國家／地區類別軸，inversed: true 讓最大值排在最上方）
+    const yRenderer = am5xy.AxisRendererY.new(root, {
+      minGridDistance: 20,
+      inversed: true,
+      minorGridEnabled: true
+    });
+    yRenderer.grid.template.set("visible", false);
+
+    const yAxis = chart.yAxes.push(am5xy.CategoryAxis.new(root, {
+      maxDeviation: 0,
+      categoryField: "network",
+      renderer: yRenderer
+    }));
+
+    // X 軸（入境人次數值軸）
+    const xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
+      maxDeviation: 0,
+      min: 0,
+      strictMinMax: true,
+      extraMax: 0.12,
+      renderer: am5xy.AxisRendererX.new(root, {})
+    }));
+
+    xAxis.set("interpolationDuration", stepDuration / 10);
+    xAxis.set("interpolationEasing", am5.ease.linear);
+
+    // 長條圖數列
+    const series = chart.series.push(am5xy.ColumnSeries.new(root, {
+      xAxis: xAxis,
+      yAxis: yAxis,
+      valueXField: "value",
+      categoryYField: "network",
+      colorByDataItem: true
+    }));
+
+    series.columns.template.setAll({
+      cornerRadiusBR: 6,
+      cornerRadiusTR: 6
+    });
+
+    // 長條末端數值標籤
+    series.bullets.push(function () {
+      return am5.Bullet.new(root, {
+        locationX: 1,
+        sprite: am5.Label.new(root, {
+          text: "{valueXWorking.formatNumber('#.# a')}",
+          fill: root.interfaceColors.get("alternativeText"),
+          centerX: am5.p100,
+          centerY: am5.p50,
+          populateText: true
+        })
+      });
+    });
+
+    // 右下角大型年份浮水印
+    const watermarkLabel = chart.plotContainer.children.push(am5.Label.new(root, {
+      text: String(START_YEAR),
+      fontSize: "5em",
+      opacity: 0.18,
+      x: am5.p100,
+      y: am5.p100,
+      centerY: am5.p100,
+      centerX: am5.p100
+    }));
+
+    function getSeriesItem(category) {
+      for (let i = 0; i < series.dataItems.length; i++) {
+        const dataItem = series.dataItems[i];
+        if (dataItem.get("categoryY") === category) {
+          return dataItem;
+        }
+      }
+    }
+
+    // 動態依數值大小重新排序 Y 軸位置
+    function sortCategoryAxis() {
+      series.dataItems.sort(function (x, y) {
+        return y.get("valueX") - x.get("valueX");
+      });
+
+      am5.array.each(yAxis.dataItems, function (dataItem) {
+        const seriesDataItem = getSeriesItem(dataItem.get("category"));
+        if (seriesDataItem) {
+          const index = series.dataItems.indexOf(seriesDataItem);
+          const deltaPosition = (index - dataItem.get("index", 0)) / series.dataItems.length;
+          if (dataItem.get("index") !== index) {
+            dataItem.set("index", index);
+            dataItem.set("deltaPosition", -deltaPosition);
+            dataItem.animate({
+              key: "deltaPosition",
+              to: 0,
+              duration: stepDuration / 2,
+              easing: am5.ease.out(am5.ease.cubic)
+            });
+          }
+        }
+      });
+
+      yAxis.dataItems.sort(function (x, y) {
+        return x.get("index") - y.get("index");
+      });
+    }
+
+    function setInitialData(targetYear) {
+      series.data.clear();
+      yAxis.data.clear();
+
+      const d = allData[String(targetYear)];
+      for (const n in d) {
+        series.data.push({ network: n, value: d[n] });
+        yAxis.data.push({ network: n });
+      }
+      watermarkLabel.set("text", String(targetYear));
+      currentYearText.textContent = String(targetYear);
+    }
+
+    function animateToYear(targetYear, durationMs) {
+      const yearData = allData[String(targetYear)];
+      if (!yearData) return;
+
+      watermarkLabel.set("text", String(targetYear));
+      currentYearText.textContent = String(targetYear);
+
+      let itemsWithNonZero = 0;
+
+      am5.array.each(series.dataItems, function (dataItem) {
+        const category = dataItem.get("categoryY");
+        const value = yearData[category] ?? 0;
+
+        if (value > 0) {
+          itemsWithNonZero++;
+        }
+
+        dataItem.animate({
+          key: "valueX",
+          to: value,
+          duration: durationMs,
+          easing: am5.ease.linear
+        });
+
+        dataItem.animate({
+          key: "valueXWorking",
+          to: value,
+          duration: durationMs,
+          easing: am5.ease.linear
+        });
+      });
+
+      yAxis.zoom(0, Math.max(itemsWithNonZero, 1) / yAxis.dataItems.length);
+    }
+
+    function pauseAnimations() {
+      am5.array.each(series.dataItems, function (dataItem) {
+        dataItem.animations.each(function (anim) {
+          anim.pause();
+        });
+      });
+    }
+
+    function resumeAnimations() {
+      am5.array.each(series.dataItems, function (dataItem) {
+        dataItem.animations.each(function (anim) {
+          anim.resume();
+        });
+      });
+    }
+
+    function stopTimers() {
+      if (stepTimer) {
+        clearInterval(stepTimer);
+        stepTimer = null;
+      }
+      if (sortTimer) {
+        clearInterval(sortTimer);
+        sortTimer = null;
+      }
+      if (initialKickoffTimer) {
+        clearTimeout(initialKickoffTimer);
+        initialKickoffTimer = null;
+      }
+    }
+
+    function syncPlayButtonUI() {
+      if (year >= END_YEAR && !isPlaying) {
+        togglePlayBtn.textContent = "▶ 播放";
+      } else {
+        togglePlayBtn.textContent = isPlaying ? "⏸ 暫停" : "▶ 播放";
+      }
+    }
+
+    function startLoop() {
+      stopTimers();
+      isPlaying = true;
+      syncPlayButtonUI();
+
+      sortTimer = setInterval(function () {
+        sortCategoryAxis();
+      }, 100);
+
+      stepTimer = setInterval(function () {
+        if (!isPlaying) return;
+        if (year >= END_YEAR) {
+          isPlaying = false;
+          stopTimers();
+          syncPlayButtonUI();
+          return;
+        }
+        year++;
+        animateToYear(year, stepDuration);
+      }, stepDuration);
+    }
+
+    togglePlayBtn.addEventListener("click", function () {
+      if (year >= END_YEAR && !isPlaying) {
+        resetChart(true);
+        return;
+      }
+
+      if (isPlaying) {
+        isPlaying = false;
+        pauseAnimations();
+        syncPlayButtonUI();
+      } else {
+        isPlaying = true;
+        resumeAnimations();
+        if (!stepTimer && year < END_YEAR) {
+          startLoop();
+        }
+        syncPlayButtonUI();
+      }
+    });
+
+    resetBtn.addEventListener("click", function () {
+      resetChart(true);
+    });
+
+    function resetChart(autoPlay) {
+      stopTimers();
+      year = START_YEAR;
+      setInitialData(START_YEAR);
+      sortCategoryAxis();
+
+      if (autoPlay) {
+        isPlaying = true;
+        syncPlayButtonUI();
+        startLoop();
+        initialKickoffTimer = setTimeout(function () {
+          if (isPlaying && year === START_YEAR) {
+            year++;
+            animateToYear(year, stepDuration);
+          }
+        }, 80);
+      } else {
+        isPlaying = false;
+        syncPlayButtonUI();
+      }
+    }
+
+    // 確保在畫面載入完成後啟動圖表與動畫
+    window.onload = function () {
+      setInitialData(START_YEAR);
+      series.appear(1000);
+      chart.appear(1000, 100);
+      resetChart(true);
+    };
+  </script>
+</body>
+</html>
